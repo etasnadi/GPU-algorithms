@@ -1,0 +1,306 @@
+/* @theme minimal-white */
+@import 'default';
+
+:root {
+  --text: #111111;
+  --muted: #555555;
+  --line: #d7d7d7;
+  --code-bg: #f5f5f5;
+  --quote-bg: #fafafa;
+}
+
+section {
+  background: #ffffff;
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 27px;
+  line-height: 1.34;
+  padding: 54px 68px 50px;
+}
+
+h1 {
+  color: var(--text);
+  font-size: 45px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 24px;
+}
+
+h2 {
+  color: var(--muted);
+  font-size: 29px;
+  font-weight: 400;
+}
+
+p, li, td, th {
+  color: var(--text);
+}
+
+strong {
+  font-weight: 700;
+}
+
+code {
+  background: var(--code-bg);
+  border-radius: 3px;
+  color: #111111;
+  font-family: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  padding: 0.05em 0.22em;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  font-size: 20px;
+  line-height: 1.32;
+  padding: 16px 19px;
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+}
+
+blockquote {
+  background: var(--quote-bg);
+  border-left: 4px solid #777777;
+  margin: 22px 0;
+  padding: 12px 20px;
+}
+
+table {
+  border-collapse: collapse;
+  font-size: 22px;
+  width: 100%;
+}
+
+th {
+  background: #eeeeee;
+  font-weight: 700;
+}
+
+th, td {
+  border: 1px solid #bdbdbd;
+  padding: 10px 13px;
+}
+
+ul, ol {
+  margin-top: 12px;
+}
+
+li {
+  margin: 7px 0;
+}
+
+footer {
+  color: #777777;
+  font-size: 13px;
+  left: 68px;
+}
+
+section::after {
+  color: #777777;
+  font-size: 13px;
+  right: 30px;
+}
+
+a {
+  color: #174ea6;
+}
+
+.cuda-flow {
+  align-items: stretch;
+  display: flex;
+  gap: 10px;
+  margin: 24px 0;
+}
+
+.cuda-flow.second-row {
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.cuda-flow > div:not(.flow-arrow) {
+  border: 1px solid #888888;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100px;
+  padding: 9px 11px;
+  text-align: center;
+}
+
+.cuda-flow b {
+  font-family: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 17px;
+}
+
+.cuda-flow span {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 4px 0;
+}
+
+.cuda-flow small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.cuda-flow .flow-arrow {
+  align-self: center;
+  color: #555555;
+  font-size: 28px;
+}
+
+.cuda-flow .cpu-step {
+  background: #ffffff;
+}
+
+.cuda-flow .gpu-step {
+  background: #f3f3f3;
+}
+
+.hardware-model {
+  display: grid;
+  gap: 13px 12px;
+  grid-template-columns: 155px 1fr;
+  margin: 8px 0 18px;
+}
+
+.hardware-label {
+  align-self: center;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.hardware-label small {
+  color: #555555;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.hardware-path {
+  align-items: stretch;
+  display: flex;
+  gap: 7px;
+}
+
+.hardware-node {
+  align-items: center;
+  background: #f4f4f4;
+  border: 1px solid #888888;
+  display: flex;
+  flex: 1;
+  font-family: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 15px;
+  justify-content: center;
+  min-height: 58px;
+  padding: 5px 7px;
+  text-align: center;
+}
+
+.hardware-node.wide {
+  flex: 1.25;
+}
+
+.hardware-node.dgx-gpus {
+  display: block;
+  flex: 2.2;
+  padding-top: 8px;
+}
+
+.hardware-node.dgx-gpus small {
+  color: #555555;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.hardware-link {
+  align-items: center;
+  color: #555555;
+  display: flex;
+  font-family: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+  justify-content: center;
+  max-width: 86px;
+  min-width: 62px;
+  position: relative;
+  text-align: center;
+}
+
+.hardware-link::after {
+  bottom: 5px;
+  content: "↔";
+  font-size: 18px;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.source-note {
+  color: #666666;
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+/* Use only on content-heavy slides that would otherwise exceed the canvas. */
+section.compact {
+  font-size: 24px;
+  padding-bottom: 42px;
+  padding-top: 44px;
+}
+
+section.compact h1 {
+  font-size: 41px;
+  margin-bottom: 16px;
+}
+
+section.compact pre {
+  font-size: 17px;
+  line-height: 1.24;
+  padding: 12px 16px;
+}
+
+section.compact table {
+  font-size: 20px;
+}
+
+section.compact th,
+section.compact td {
+  padding: 7px 10px;
+}
+
+section.compact li {
+  margin: 4px 0;
+}
+
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal {
+  color: #7b1fa2;
+}
+
+.hljs-type,
+.hljs-built_in,
+.hljs-title.class_ {
+  color: #005cc5;
+}
+
+.hljs-string,
+.hljs-number {
+  color: #0b6e4f;
+}
+
+.hljs-comment {
+  color: #6a737d;
+  font-style: italic;
+}
+
+.hljs-title.function_,
+.hljs-function .hljs-title {
+  color: #8a4b08;
+}
