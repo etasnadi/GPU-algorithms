@@ -2,3 +2,5 @@
 out
 stuff
 GPU Algorithms.code-workspace
+run-worker.sh
+*.ncu-rep
