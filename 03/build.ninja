@@ -1,0 +1,15 @@
+ninja_required_version = 1.10
+
+nvcc = nvcc
+builddir = build
+flags = -O3 -lineinfo -I../include
+
+rule cuda
+  command = /usr/bin/mkdir -p $builddir && $nvcc $flags -MMD -MF $out.d $in -o $out
+  depfile = $out.d
+  deps = gcc
+  description = NVCC $in
+
+build $builddir/block-reduce: cuda block-reduce.cu
+
+default $builddir/block-reduce

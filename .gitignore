@@ -1,6 +1,10 @@
 .DS_Store
 out
+build
 stuff
 GPU Algorithms.code-workspace
 run-worker.sh
 *.ncu-rep
+.log
+.ninja_deps
+.ninja_log

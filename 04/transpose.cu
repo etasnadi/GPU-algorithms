@@ -36,7 +36,7 @@ __global__ void trans(float* A, float* B, int M, int N){
     B[i*N+j] = A[j*M+i];
 
     // Tiled copy of A into B, this is not strided, as j depends on j that is contigous.
-    //B[i*N+j] = A[i*N+j];
+    //B[i*N+j] = A[i*N+j]; 
 }
 
 int main(){

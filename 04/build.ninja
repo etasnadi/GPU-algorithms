@@ -1,0 +1,11 @@
+ninja_required_version = 1.10
+
+rule nvcc
+  command = /usr/bin/mkdir -p build && nvcc -O3 -lineinfo -I../include -MMD -MF $out.d $in -o $out
+  depfile = $out.d
+  deps = gcc
+  description = NVCC $in
+
+build build/transpose: nvcc transpose.cu
+
+default build/transpose
