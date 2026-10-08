@@ -152,13 +152,15 @@ nsys profile \
   python torch_test.py
 ```
 
-The command creates a report in `torch_profile.nsys-rep`. Open it in the profiler application:
+The command creates a report in `torch_profile.nsys-rep`. Open it with Nsight Systems:
 
 ```bash
 nsys-ui torch_profile.nsys-rep
 ```
 
 Now we can investigate which GPU kernels are called by which CPU thread.
+
+The ninja builds are provided for each exercise. The easiest way to install ninja is to install as a python package: `pip install ninja` into the environment. To build the applications, simply use the `ninja` command.
 
 ## Exercise
 
