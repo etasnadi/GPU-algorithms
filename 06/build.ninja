@@ -1,0 +1,12 @@
+ninja_required_version = 1.10
+
+rule nvcc
+  command = /usr/bin/mkdir -p build && nvcc -O3 -lineinfo -I../include -MMD -MF $out.d $in -o $out $libs
+  depfile = $out.d
+  deps = gcc
+  description = NVCC $in
+
+build build/matmul: nvcc matmul.cu
+  libs = -lnvToolsExt -lcurand
+
+default build/matmul
