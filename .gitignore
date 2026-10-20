@@ -1,10 +1,22 @@
+# OS system files
 .DS_Store
-out
-build
-stuff
-GPU Algorithms.code-workspace
+
+# Host environment specific files
 run-worker.sh
+
+# IDE specific files
+GPU Algorithms.code-workspace
+
+# Generated data
+build
+out
 *.ncu-rep
 .log
+
+# Build system files
 .ninja_deps
 .ninja_log
+
+# Quizes and miscellaneous files are synced to the cloud
+quiz
+stuff
