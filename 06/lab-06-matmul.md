@@ -9,4 +9,4 @@ If we execute the code on 3060, we see that the perf is 788 GFLOPS/s. The peak p
 
 Important: why are we interested in GFLOPS/s instead of GB/s in the matmul experiment?
 
-Create an ncu report to see why we get only 10% of the peak perf: `ncu --set full --nvtx --nvtx-include 'regex:matmul_naive iteration 23/' -o build/matmul-report -f ./build/matmul`.
+Create an ncu report to see why we get only 10% of the peak perf: `ncu --set full --nvtx --nvtx-include "regex:matmul_naive iteration 23/" -o build/matmul-report -f ./build/matmul`.
