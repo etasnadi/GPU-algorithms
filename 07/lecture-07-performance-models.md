@@ -46,7 +46,7 @@ Copy and transpose perform *little* (or no) arithmetic for every transferred byt
 
 Which metric we would be useful for the dot product kernel?
 
-The relevant question is how much computation the implementation performs for its memory traffic. This is captured by *arithmetic intensity* (AI).
+The relevant question is how much computation the implementation performs for its memory traffic. This is captured by *arithmetic intensity* (I).
 
 ---
 
@@ -76,18 +76,30 @@ $$
 P \leq \min\left(P_{\text{peak}},\ B_{\text{peak}}I\right)
 $$
 
-| Roofline region | Main ceiling |
-|---|---|
-| sloped region | memory bandwidth |
-| flat region | compute throughput |
-
 Units:
 
 * $P$ and $P_{\text{peak}}$: FLOP/s
 * $B_{\text{peak}}$: byte/s
 * $I$: FLOP/byte
 
+It is visualized on the roofline diagram:
+
+| Roofline region | Main ceiling |
+|---|---|
+| sloped region | memory bandwidth |
+| flat region | compute throughput |
+
 ---
+
+# A usual roofline diagram
+
+![width:950px](assets/roofline-model.svg)
+
+<p class="source-note">Source: “Example of a naive Roofline model,” Wikimedia Commons, CC BY-SA 4.0.</p>
+
+---
+
+# Memory bound to compute bound phase change
 
 The ridge point is:
 
@@ -100,14 +112,6 @@ Implications:
 * A point far below either roof indicates another inefficiency or insufficient parallel work.
 
 * The ridge point is the minimum arithmetic intensity at which peak compute throughput becomes attainable.
-
----
-
-# The roofline model
-
-![width:950px](assets/roofline-model.svg)
-
-<p class="source-note">Source: “Example of a naive Roofline model,” Wikimedia Commons, CC BY-SA 4.0.</p>
 
 ---
 
@@ -135,7 +139,7 @@ In other words, the GPU compute units are underutilized if they perform less tha
 
 ---
 
-# The naive kernel requests little reuse
+# The naive matrix multiplication kernel requests little reuse
 
 One thread computes one output value:
 
@@ -157,6 +161,36 @@ $$
 For $K=512$, the work is $1024$ FLOPs and the ratio is approximately $0.25$ FLOP/byte.
 
 In other words, the naive kernel loads the same data from tha A and B matrices many times.
+
+---
+
+# 3060 matmul perf example
+
+Recall that the naive matrix multiplication reached
+
+$$
+P_{\text{measured}}=788\ \mathrm{GFLOP/s}
+\qquad (M=N=K=512).
+$$
+
+Its estimated arithmetic intensity is
+
+$$
+I_{\text{naive},512}=0.25\ \mathrm{FLOP/byte}.
+$$
+
+Using the peak DRAM bandwidth:
+
+$$
+\begin{aligned}
+P_{\text{estimated}}
+&=B_{\text{peak}}I_{\text{naive},512} \\
+&=360\ \mathrm{GB/s}\times0.25\ \mathrm{FLOP/byte} \\
+&=90\ \mathrm{GFLOP/s}.
+\end{aligned}
+$$
+
+- Why is the measured performance, $788\ \mathrm{GFLOP/s}$, higher than the estimated $90\ \mathrm{GFLOP/s}$?
 
 ---
 
