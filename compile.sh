@@ -5,6 +5,7 @@ set -eu
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 THEME="$ROOT_DIR/assets/minimal-white.css"
 BUILT=0
+TARGET_DIR=
 
 find_browser() {
   if [ -n "${MARP_BROWSER_PATH-}" ]; then
@@ -67,9 +68,13 @@ find_browser() {
   printf '%s\n' "$browser"
 }
 
+if [ "$#" -gt 1 ]; then
+  printf 'Usage: %s [clean|DIRECTORY]\n' "$0" >&2
+  exit 2
+fi
+
 case "${1-}" in
-  "")
-    ;;
+  "") ;;
   clean)
     for lecture_dir in "$ROOT_DIR"/[0-9][0-9]*; do
       [ -d "$lecture_dir" ] || continue
@@ -83,8 +88,18 @@ case "${1-}" in
     exit 0
     ;;
   *)
-    printf 'Usage: %s [clean]\n' "$0" >&2
-    exit 2
+    case "$1" in
+      .|..|*/*)
+        printf 'Please specify a directory name directly under %s.\n' "$ROOT_DIR" >&2
+        exit 2
+        ;;
+    esac
+
+    TARGET_DIR="$ROOT_DIR/$1"
+    if [ ! -d "$TARGET_DIR" ]; then
+      printf 'Directory not found: %s\n' "$1" >&2
+      exit 1
+    fi
     ;;
 esac
 
@@ -95,7 +110,13 @@ fi
 
 BROWSER_PATH=$(find_browser)
 
-for lecture_dir in "$ROOT_DIR"/[0-9][0-9]*; do
+if [ -n "$TARGET_DIR" ]; then
+  set -- "$TARGET_DIR"
+else
+  set -- "$ROOT_DIR"/[0-9][0-9]*
+fi
+
+for lecture_dir do
   [ -d "$lecture_dir" ] || continue
 
   for source in "$lecture_dir"/*.md; do
@@ -109,12 +130,14 @@ for lecture_dir in "$ROOT_DIR"/[0-9][0-9]*; do
 
     npx --yes @marp-team/marp-cli@latest \
       --theme-set "$THEME" \
+      --allow-local-files \
       --html \
       --output "$output_base.html" \
       "$source"
 
     npx --yes @marp-team/marp-cli@latest \
       --theme-set "$THEME" \
+      --allow-local-files \
       --pdf \
       --browser chrome \
       --browser-path "$BROWSER_PATH" \
@@ -126,7 +149,11 @@ for lecture_dir in "$ROOT_DIR"/[0-9][0-9]*; do
 done
 
 if [ "$BUILT" -eq 0 ]; then
-  printf '%s\n' 'No Marp presentations found in numbered directories.' >&2
+  if [ -n "$TARGET_DIR" ]; then
+    printf 'No Marp presentations found in %s.\n' "${TARGET_DIR#"$ROOT_DIR"/}" >&2
+  else
+    printf '%s\n' 'No Marp presentations found in numbered directories.' >&2
+  fi
   exit 1
 fi
 

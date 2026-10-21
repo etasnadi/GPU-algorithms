@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" role="img" aria-labelledby="title description">
+  <title id="title">Naive roofline performance model</title>
+  <desc id="description">Performance P as a function of arithmetic intensity I. The sloped memory-bandwidth roof B peak times I meets the horizontal compute roof P peak at I ridge. A low-intensity kernel is memory-bandwidth bound and a high-intensity kernel is compute-throughput bound.</desc>
+  <metadata>
+    Adapted from "Example of a naive Roofline model" by Giu.natale,
+    Wikimedia Commons, CC BY-SA 4.0.
+    https://commons.wikimedia.org/wiki/File:Example_of_a_naive_Roofline_model.svg
+  </metadata>
+
+  <rect width="1000" height="520" fill="#ffffff"/>
+
+  <!-- Axes -->
+  <line x1="110" y1="430" x2="930" y2="430" stroke="#111111" stroke-width="3"/>
+  <polygon points="930,430 914,422 914,438" fill="#111111"/>
+  <line x1="110" y1="430" x2="110" y2="55" stroke="#111111" stroke-width="3"/>
+  <polygon points="110,55 102,71 118,71" fill="#111111"/>
+
+  <!-- Log-scale tick marks -->
+  <g stroke="#777777" stroke-width="2">
+    <line x1="190" y1="430" x2="190" y2="438"/>
+    <line x1="270" y1="430" x2="270" y2="438"/>
+    <line x1="350" y1="430" x2="350" y2="438"/>
+    <line x1="430" y1="430" x2="430" y2="438"/>
+    <line x1="510" y1="430" x2="510" y2="438"/>
+    <line x1="590" y1="430" x2="590" y2="438"/>
+    <line x1="670" y1="430" x2="670" y2="438"/>
+    <line x1="750" y1="430" x2="750" y2="438"/>
+    <line x1="830" y1="430" x2="830" y2="438"/>
+
+    <line x1="102" y1="360" x2="110" y2="360"/>
+    <line x1="102" y1="290" x2="110" y2="290"/>
+    <line x1="102" y1="220" x2="110" y2="220"/>
+    <line x1="102" y1="150" x2="110" y2="150"/>
+    <line x1="102" y1="80" x2="110" y2="80"/>
+  </g>
+
+  <!-- Roofs -->
+  <polyline points="155,410 570,140 900,140" fill="none" stroke="#111111" stroke-width="5" stroke-linejoin="round"/>
+  <line x1="570" y1="140" x2="570" y2="430" stroke="#777777" stroke-width="2.5" stroke-dasharray="9 8"/>
+
+  <!-- Example kernel intensities -->
+  <line x1="335" y1="430" x2="335" y2="293" stroke="#b3261e" stroke-width="3" stroke-dasharray="10 8"/>
+  <circle cx="335" cy="293" r="7" fill="#b3261e"/>
+  <line x1="755" y1="430" x2="755" y2="140" stroke="#b3261e" stroke-width="3" stroke-dasharray="10 8"/>
+  <circle cx="755" cy="140" r="7" fill="#b3261e"/>
+
+  <!-- Labels -->
+  <g fill="#111111" font-family="Arial, Helvetica, sans-serif">
+    <text x="525" y="497" font-size="27" text-anchor="middle">Arithmetic intensity I [FLOP/byte]</text>
+    <text x="34" y="245" font-size="27" text-anchor="middle" transform="rotate(-90 34 245)">Performance P [FLOP/s]</text>
+
+    <text x="745" y="121" font-size="27" font-style="italic">P<tspan baseline-shift="sub" font-size="18">peak</tspan></text>
+    <text x="245" y="255" font-size="27" font-style="italic" transform="rotate(-33 245 255)">B<tspan baseline-shift="sub" font-size="18">peak</tspan>I</text>
+
+    <text x="590" y="190" font-size="22" font-style="italic">I<tspan baseline-shift="sub" font-size="15">ridge</tspan><tspan font-style="normal"> = </tspan>P<tspan baseline-shift="sub" font-size="15">peak</tspan><tspan font-style="normal"> / </tspan>B<tspan baseline-shift="sub" font-size="15">peak</tspan></text>
+
+    <text x="300" y="92" font-size="24" text-anchor="middle">memory-bandwidth bound</text>
+    <text x="770" y="245" font-size="25" text-anchor="middle">compute-throughput bound</text>
+
+    <text x="320" y="416" font-size="21" text-anchor="end">low I</text>
+    <text x="770" y="416" font-size="21">high I</text>
+  </g>
+</svg>
