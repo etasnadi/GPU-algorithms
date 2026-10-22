@@ -29,8 +29,8 @@ __global__ void naive(float* A, float* B, int M, int N)
     int pos_Ax = threadIdx.x;
     int pos_Ay = threadIdx.y;
 
-    B[(tile_Ax*TILE_SIZE+pos_Ax)*N + tile_Ay*TILE_SIZE+pos_Ay] =
-        A[(tile_Ay*TILE_SIZE+pos_Ay)*N + tile_Ax*TILE_SIZE+pos_Ax];
+    B[(tile_Ay*TILE_SIZE+pos_Ay)*N + tile_Ax*TILE_SIZE+pos_Ax] =
+        A[(tile_Ax*TILE_SIZE+pos_Ax)*N + tile_Ay*TILE_SIZE+pos_Ay];
 }
 
 template<int TILE_SIZE>

@@ -7,6 +7,6 @@ rule nvcc
   description = NVCC $in
 
 build build/matmul: nvcc matmul.cu
-  libs = -lnvToolsExt -lcurand
+libs = -lnvToolsExt -lcurand -lcublas
 
 default build/matmul
