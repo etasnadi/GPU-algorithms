@@ -117,12 +117,14 @@ from DRAM. However, between L1/TEX and L2, the naive kernel generates roughly:
 - 6× as many write requests;
 - 3.5× as many affected sectors.
 
-Measured affected-sector counts:
+Measured affected-sector counts (L1/TEX Cache -> Global Store)
 
 ```text
-naive: 6,420,562 sectors
-shmem: 1,048,576 sectors
+naive: 8,388,608 sectors
+shmem: 2,097,152 sectors
 ```
+
+
 
 Consequently, the naive kernel shows much higher L1/TEX and L2 throughput. This
 does not represent useful additional work: the memory subsystem is processing
