@@ -71,18 +71,6 @@ __global__ void shmem_fix_bank_conflicts(float* A, float* B, int M, int N)
         tmp[pos_Ax][pos_Ay];
 }
 
-__global__ void flush_l2_cache(
-    std::uint32_t* buffer,
-    std::size_t element_count,
-    std::uint32_t value)
-{
-    for (std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
-         i < element_count;
-         i += static_cast<std::size_t>(blockDim.x) * gridDim.x) {
-        buffer[i] += value;
-    }
-}
-
 bool print_results(
     const char* name,
     const std::vector<float>& elapsed_times,
@@ -161,9 +149,6 @@ int main()
     const std::size_t flush_bytes = 2 * l2_bytes;
     const std::size_t flush_elements =
         (flush_bytes + sizeof(std::uint32_t) - 1) / sizeof(std::uint32_t);
-    const int flush_blocks = static_cast<int>(
-        (flush_elements + FLUSH_BLOCK_SIZE - 1) / FLUSH_BLOCK_SIZE);
-
     dim3 grid(N/TILE_SIZE, M/TILE_SIZE);
     dim3 block(TILE_SIZE, TILE_SIZE);
 
@@ -205,7 +190,7 @@ int main()
         check_curand(
             curandGenerateUniform(random_generator, d_A, element_count),
             "curandGenerateUniform");
-        flush_l2_cache<<<flush_blocks, FLUSH_BLOCK_SIZE>>>(
+        launch_flush_l2_cache<FLUSH_BLOCK_SIZE>(
             d_l2_flush, flush_elements, iteration + 1);
         naive<TILE_SIZE><<<grid, block>>>(d_A, d_B, M, N);
     }
@@ -215,7 +200,7 @@ int main()
         check_curand(
             curandGenerateUniform(random_generator, d_A, element_count),
             "curandGenerateUniform");
-        flush_l2_cache<<<flush_blocks, FLUSH_BLOCK_SIZE>>>(
+        launch_flush_l2_cache<FLUSH_BLOCK_SIZE>(
             d_l2_flush, flush_elements, iteration + 1);
         if (iteration == PROFILED_ITERATION) {
             nvtxRangePushA("naive iteration 23");
@@ -243,7 +228,7 @@ int main()
         check_curand(
             curandGenerateUniform(random_generator, d_A, element_count),
             "curandGenerateUniform");
-        flush_l2_cache<<<flush_blocks, FLUSH_BLOCK_SIZE>>>(
+        launch_flush_l2_cache<FLUSH_BLOCK_SIZE>(
             d_l2_flush, flush_elements, iteration + 1);
         shmem<TILE_SIZE><<<grid, block>>>(d_A, d_B, M, N);
     }
@@ -253,7 +238,7 @@ int main()
         check_curand(
             curandGenerateUniform(random_generator, d_A, element_count),
             "curandGenerateUniform");
-        flush_l2_cache<<<flush_blocks, FLUSH_BLOCK_SIZE>>>(
+        launch_flush_l2_cache<FLUSH_BLOCK_SIZE>(
             d_l2_flush, flush_elements, iteration + 1);
         if (iteration == PROFILED_ITERATION) {
             nvtxRangePushA("shmem iteration 23");
@@ -281,7 +266,7 @@ int main()
         check_curand(
             curandGenerateUniform(random_generator, d_A, element_count),
             "curandGenerateUniform");
-        flush_l2_cache<<<flush_blocks, FLUSH_BLOCK_SIZE>>>(
+        launch_flush_l2_cache<FLUSH_BLOCK_SIZE>(
             d_l2_flush, flush_elements, iteration + 1);
         shmem_fix_bank_conflicts<TILE_SIZE><<<grid, block>>>(d_A, d_B, M, N);
     }
@@ -291,7 +276,7 @@ int main()
         check_curand(
             curandGenerateUniform(random_generator, d_A, element_count),
             "curandGenerateUniform");
-        flush_l2_cache<<<flush_blocks, FLUSH_BLOCK_SIZE>>>(
+        launch_flush_l2_cache<FLUSH_BLOCK_SIZE>(
             d_l2_flush, flush_elements, iteration + 1);
         if (iteration == PROFILED_ITERATION) {
             nvtxRangePushA("shmem_fix_bank_conflicts iteration 23");
