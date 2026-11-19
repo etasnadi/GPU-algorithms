@@ -54,30 +54,31 @@ https://docs.nvidia.com/cuda/cublas/
 
 # An FP32 cuBLAS baseline
 
+Multiplying two row-major matrices with cuBLAS:
+
 **Host (CPU) code**
 
 ```cpp
 cublasHandle_t handle;
 check_cublas(cublasCreate(&handle));
 
-check_cublas(
-    cublasSetMathMode(handle, CUBLAS_PEDANTIC_MATH));
-
 const float alpha = 1.0f;
 const float beta  = 0.0f;
 
 check_cublas(cublasSgemm(
     handle,
-    CUBLAS_OP_N, CUBLAS_OP_N,
-    N, M, K,
+    CUBLAS_OP_N, CUBLAS_OP_N,   // transposed setting of A and B
+    N, M, K,                    // Matrix sizes, K is the inner product dim
     &alpha,
-    d_B, N,
-    d_A, K,
+    d_B, N,                     // A matrix with the leading dim
+    d_A, K,                     // B matrix with the leading dim
     &beta,
-    d_C, N));
+    d_C, N));                   // C matrix with the leading dim
 ```
 
-`CUBLAS_PEDANTIC_MATH` makes this a useful prescribed-precision reference.
+Why `A` and `B` are swapped?
+
+CuBLAS SGEMM follows the original BLAS SGEMM call convention.
 
 <!--
 This matches the row-major workaround already used by 06/matmul.cu for validation.
@@ -88,9 +89,25 @@ https://docs.nvidia.com/cuda/cublas/
 
 ---
 
+# BLAS GEMM
+
+Transposed parameter: `N` (normal) or `T` (transposed) for `A` and `B`.
+
+Matrix sizes: `M`, `N`, `K`, where `K` is the inner product dim.
+
+Leading dimensions: `lda`, `ldb`, `ldc`: if we want to work with submatrices.
+
+BLAS accesses `M(i, j)=M[i+j*ld]` if we call with `N` and `M(i, j)=M[j+i*ld]` otherwise.
+
+See the LAPACK implementation: 
+https://github.com/Reference-LAPACK/lapack/blob/master/BLAS/SRC/dgemm.f (line 322) shows the alg.
+*   It handles 4 cases depending on the transposed parameters: NN, NT, TN, and TT.
+
+---
+
 # Row-major matrices in cuBLAS
 
-The classic cuBLAS interface interprets matrices as column-major.
+The classic BLAS/cuBLAS interface interprets matrices as column-major.
 
 A row-major matrix and its transpose in column-major storage have the same byte layout.
 
@@ -107,8 +124,6 @@ C^T = B^T A^T
 $$
 
 Therefore the cuBLAS call swaps `A` and `B`, and swaps the output dimensions `M` and `N`.
-
-The leading dimension is the stride to the next column in the column-major interpretation.
 
 <!--
 Derive the argument order from the matrix dimensions rather than asking students to memorize the call.
@@ -248,7 +263,9 @@ $$
 
 The operation is issued and consumed cooperatively by a warp.
 
-The matrix fragments are distributed across the warp's threads.
+**The Tensor Cores compute multiple outer products in a single instruction.**
+
+The matrix fragments are distributed across the warp's threads (not true for all Tensor Core generations!).
 
 Tensor Cores support selected combinations of:
 
