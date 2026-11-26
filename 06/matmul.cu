@@ -736,6 +736,93 @@ void launch_matmul_shmem_thread_tiling_tune(
         <<<grid, block>>>(A, B, C, MATRIX_M, MATRIX_N, MATRIX_K);
 }
 
+template<int SPLIT_K>
+__global__ void matmul_split_k(
+    const float* A,
+    const float* B,
+    float* partial_C,
+    int MATRIX_M,
+    int MATRIX_N,
+    int MATRIX_K)
+{
+    const int column = blockIdx.x * blockDim.x + threadIdx.x;
+    const int row = blockIdx.y * blockDim.y + threadIdx.y;
+    const int split = blockIdx.z;
+
+    if (row >= MATRIX_M || column >= MATRIX_N) {
+        return;
+    }
+
+    const int k_per_split = CEIL_DIV(MATRIX_K, SPLIT_K);
+    const int k_begin = split * k_per_split;
+    const int k_end = min(k_begin + k_per_split, MATRIX_K);
+
+    float sum = 0.0f;
+    for (int k = k_begin; k < k_end; ++k) {
+        sum += A[row * MATRIX_K + k] * B[k * MATRIX_N + column];
+    }
+
+    const std::size_t c_elements =
+        static_cast<std::size_t>(MATRIX_M) * MATRIX_N;
+    const std::size_t output_index =
+        static_cast<std::size_t>(row) * MATRIX_N + column;
+    partial_C[static_cast<std::size_t>(split) * c_elements + output_index] =
+        sum;
+}
+
+template<int SPLIT_K>
+__global__ void matmul_split_k_reduce(
+    const float* partial_C,
+    float* C,
+    int MATRIX_M,
+    int MATRIX_N)
+{
+    const std::size_t output_index =
+        static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    const std::size_t c_elements =
+        static_cast<std::size_t>(MATRIX_M) * MATRIX_N;
+
+    if (output_index >= c_elements) {
+        return;
+    }
+
+    float sum = 0.0f;
+#pragma unroll
+    for (int split = 0; split < SPLIT_K; ++split) {
+        sum += partial_C[
+            static_cast<std::size_t>(split) * c_elements + output_index];
+    }
+    C[output_index] = sum;
+}
+
+template<int BLOCK_SIZE, int SPLIT_K>
+void launch_matmul_split_k_reduce(
+    const float* A,
+    const float* B,
+    float* partial_C,
+    float* C,
+    int MATRIX_M,
+    int MATRIX_N,
+    int MATRIX_K)
+{
+    const dim3 matmul_block(BLOCK_SIZE, BLOCK_SIZE);
+    const dim3 matmul_grid(
+        CEIL_DIV(MATRIX_N, BLOCK_SIZE),
+        CEIL_DIV(MATRIX_M, BLOCK_SIZE),
+        SPLIT_K);
+    matmul_split_k<SPLIT_K><<<matmul_grid, matmul_block>>>(
+        A, B, partial_C, MATRIX_M, MATRIX_N, MATRIX_K);
+
+    constexpr int REDUCE_BLOCK_SIZE = 256;
+    const std::size_t c_elements =
+        static_cast<std::size_t>(MATRIX_M) * MATRIX_N;
+    const std::size_t reduce_grid_size =
+        CEIL_DIV(c_elements, REDUCE_BLOCK_SIZE);
+    matmul_split_k_reduce<SPLIT_K>
+        <<<reduce_grid_size, REDUCE_BLOCK_SIZE>>>(
+            partial_C, C, MATRIX_M, MATRIX_N);
+}
+
 bool compare_results(
     const std::vector<float>& reference,
     const std::vector<float>& actual,
@@ -909,9 +996,11 @@ int main(int argc, char** argv)
 {
     const CheckMode check_mode = parse_check_mode(argc, argv);
 
-    constexpr int MATRIX_M = 2048;
-    constexpr int MATRIX_N = 2048;
-    constexpr int MATRIX_K = 2048;
+    // Split-K is useful when M and N provide little output-tile parallelism,
+    // while the reduction dimension K is long.
+    constexpr int MATRIX_M = 128;
+    constexpr int MATRIX_N = 128;
+    constexpr int MATRIX_K = 65536;
 
     constexpr int BENCHMARK_WARMUP_ITERATIONS = 10;
     constexpr int BENCHMARK_MEASURED_ITERATIONS = 100;
@@ -1496,6 +1585,121 @@ int main(int argc, char** argv)
             MATRIX_M,
             MATRIX_N,
             MATRIX_K);
+    }
+
+    // ------------------------ matmul_split_k_reduce ------------------------
+
+    // Split the long K dimension between independent thread blocks, then
+    // reduce the partial output matrices into C.
+    {
+        constexpr int SPLIT_K_BLOCK_SIZE = 16;
+        constexpr int SPLIT_K_SPLIT_COUNT = 8;
+
+        const std::size_t partial_c_elements =
+            static_cast<std::size_t>(SPLIT_K_SPLIT_COUNT) * c_elements;
+        const std::size_t partial_c_bytes =
+            partial_c_elements * sizeof(float);
+        float* d_partial_C = nullptr;
+        CUDA_CHECK(cudaMalloc(&d_partial_C, partial_c_bytes));
+
+        std::vector<float> elapsed_times;
+        elapsed_times.reserve(BENCHMARK_MEASURED_ITERATIONS);
+        check_curand(
+            curandSetPseudoRandomGeneratorSeed(
+                random_generator,
+                INPUT_RANDOM_SEED),
+            "curandSetPseudoRandomGeneratorSeed");
+
+        std::cout << "\nRunning matmul_split_k_reduce" << std::endl;
+        std::cout << "Template parameters:" << std::endl;
+        std::cout << "  BLOCK_SIZE = "
+                  << SPLIT_K_BLOCK_SIZE << std::endl;
+        std::cout << "  SPLIT_K = "
+                  << SPLIT_K_SPLIT_COUNT << std::endl;
+        std::cout << "  Partial output buffer = "
+                  << partial_c_bytes / 1024.0 / 1024.0
+                  << " MiB" << std::endl;
+
+        for (int iteration = 0;
+             iteration < BENCHMARK_WARMUP_ITERATIONS;
+             ++iteration) {
+            check_curand(
+                curandGenerateUniform(random_generator, d_A, a_elements),
+                "curandGenerateUniform(A)");
+            check_curand(
+                curandGenerateUniform(random_generator, d_B, b_elements),
+                "curandGenerateUniform(B)");
+            launch_flush_l2_cache<L2_FLUSH_BLOCK_SIZE>(
+                d_l2_flush, flush_elements, iteration + 1);
+            launch_matmul_split_k_reduce<
+                SPLIT_K_BLOCK_SIZE,
+                SPLIT_K_SPLIT_COUNT>(
+                    d_A,
+                    d_B,
+                    d_partial_C,
+                    d_C,
+                    MATRIX_M,
+                    MATRIX_N,
+                    MATRIX_K);
+        }
+        CUDA_CHECK(cudaDeviceSynchronize());
+
+        for (int iteration = 0;
+             iteration < BENCHMARK_MEASURED_ITERATIONS;
+             ++iteration) {
+            check_curand(
+                curandGenerateUniform(random_generator, d_A, a_elements),
+                "curandGenerateUniform(A)");
+            check_curand(
+                curandGenerateUniform(random_generator, d_B, b_elements),
+                "curandGenerateUniform(B)");
+            launch_flush_l2_cache<L2_FLUSH_BLOCK_SIZE>(
+                d_l2_flush, flush_elements, iteration + 1);
+
+            if (iteration == BENCHMARK_PROFILED_ITERATION) {
+                nvtxRangePushA("matmul_split_k_reduce iteration 23");
+            }
+            CUDA_CHECK(cudaEventRecord(start));
+            launch_matmul_split_k_reduce<
+                SPLIT_K_BLOCK_SIZE,
+                SPLIT_K_SPLIT_COUNT>(
+                    d_A,
+                    d_B,
+                    d_partial_C,
+                    d_C,
+                    MATRIX_M,
+                    MATRIX_N,
+                    MATRIX_K);
+            CUDA_CHECK(cudaEventRecord(stop));
+            if (iteration == BENCHMARK_PROFILED_ITERATION) {
+                nvtxRangePop();
+            }
+
+            CUDA_CHECK(cudaEventSynchronize(stop));
+            float elapsed_ms = 0.0f;
+            CUDA_CHECK(cudaEventElapsedTime(&elapsed_ms, start, stop));
+            elapsed_times.push_back(elapsed_ms);
+        }
+        CUDA_CHECK(cudaGetLastError());
+
+        print_performance(
+            "matmul_split_k_reduce",
+            elapsed_times,
+            MATRIX_M,
+            MATRIX_N,
+            MATRIX_K);
+        success &= check_result(
+            check_mode,
+            cublas_handle,
+            d_A,
+            d_B,
+            d_C,
+            d_reference,
+            MATRIX_M,
+            MATRIX_N,
+            MATRIX_K);
+
+        CUDA_CHECK(cudaFree(d_partial_C));
     }
 
     // ------------------------ cuBLAS SGEMM ------------------------

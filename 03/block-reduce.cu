@@ -1,6 +1,6 @@
 #include <iostream>
 
-__global__ void block_reduce(float* numbers, float* out, int n){
+__global__ void block_reduce_naive(float* numbers, float* out, int n){
     __shared__ float partial[128];
     partial[threadIdx.x] = numbers[threadIdx.x];
 
@@ -50,8 +50,34 @@ __global__ void block_reduce(float* numbers, float* out, int n){
     }
 }
 
+__device__ void block_reduce(float* partial){
+    // --- reduction tree ---
+
+    for(int stride = blockDim.x / 2; stride > 0; stride /= 2){
+        if(threadIdx.x < stride){
+            partial[threadIdx.x] += partial[threadIdx.x + stride];
+        }
+        __syncthreads();
+    }
+}
+
+__global__ void reduce(float* numbers, float* out, int n){
+    __shared__ float partial[128];
+
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    partial[threadIdx.x] = numbers[index];
+
+    __syncthreads();
+
+    block_reduce(partial);
+
+    if(threadIdx.x == 0){
+        atomicAdd(out, partial[0]);
+    }
+}
+
 int main(){
-    int n = 128;
+    int n = 4096;
     float* h_numbers;
     float* h_out;
 
@@ -79,8 +105,11 @@ int main(){
 
     // Copy host buffer to device buffer
     cudaMemcpy(d_numbers, h_numbers, n*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemset(d_out, 0, sizeof(float));
 
-    block_reduce<<<1, 128>>>(d_numbers, d_out, n);
+    // Every block reduces 128 values. The block sums are combined with
+    // atomicAdd.
+    reduce<<<n / 128, 128>>>(d_numbers, d_out, n);
     cudaDeviceSynchronize();
 
     // Copy the result from the GPU memory to the host
